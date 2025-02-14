@@ -1,25 +1,27 @@
 using DapperDemo.Data;
+using DapperDemo.DataAccess.Repository;
 using DapperDemo.Repository;
 using Microsoft.EntityFrameworkCore;
-using System;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
-builder.Services.AddControllersWithViews();
-
-
+builder.Services.AddScoped<IDataRepository, DataRepository>(_ => new DataRepository(connectionString));
+builder.Services.AddMvc();
+builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.+
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -30,6 +32,10 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Use MapControllers for API routing
+app.MapControllers(); // This enables routing for API controllers
+
+// Keep the MVC route for your existing views
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
